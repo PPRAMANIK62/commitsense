@@ -1,21 +1,40 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
+import { FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { zodResolver } from "@hookform/resolvers/zod";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
+import { z } from "zod";
 
-type FormInput = {
-  repoUrl: string;
-  projectName: string;
-  githubToken?: string;
-};
+const formSchema = z.object({
+  projectName: z.string().min(3, {
+    message: "Project name must be at least 3 characters",
+  }),
+  repoUrl: z.string().url(),
+  githubToken: z.string().optional(),
+});
 
 const CreateProject = () => {
-  const { register, handleSubmit, reset } = useForm<FormInput>();
+  const {
+    control,
+    handleSubmit,
+    register,
+    formState: { errors },
+  } = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    mode: "onChange",
+    defaultValues: {
+      projectName: "",
+      repoUrl: "",
+      githubToken: "",
+    },
+  });
 
-  const onSubmit = (data: FormInput) => {
-    window.alert(JSON.stringify(data, null, 2));
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    window.alert(JSON.stringify(values, null, 2));
     return true;
   };
 
@@ -37,28 +56,75 @@ const CreateProject = () => {
           </p>
         </div>
         <div className="h-4"></div>
-        <div>
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <Input
-              {...(register("projectName"), { required: true })}
-              placeholder="Project Name"
-              required
-            />
-            <div className="h-2"></div>
-            <Input
-              {...(register("repoUrl"), { required: true })}
-              placeholder="Project URL"
-              required
-            />
-            <div className="h-2"></div>
-            <Input
-              {...register("githubToken")}
-              placeholder="Github Token (Optional)"
-            />
-            <div className="h-4"></div>
-            <Button type="submit">Create Project</Button>
-          </form>
-        </div>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <FormField
+            name="projectName"
+            control={control}
+            render={({ field }) => (
+              <FormItem>
+                <Input
+                  {...(register("projectName"), { required: true })}
+                  placeholder="Project Name"
+                  className={cn(
+                    errors.projectName && "focus-visible:ring-red-500",
+                  )}
+                  required
+                  {...field}
+                />
+                {errors.projectName && (
+                  <p className="text-sm text-red-500">
+                    {errors.projectName.message}
+                  </p>
+                )}
+                <div className="h-1"></div>
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="repoUrl"
+            control={control}
+            render={({ field }) => (
+              <FormItem>
+                <Input
+                  {...(register("repoUrl"), { required: true })}
+                  placeholder="Project URL"
+                  className={cn(errors.repoUrl && "focus-visible:ring-red-500")}
+                  required
+                  {...field}
+                />
+                {errors.repoUrl && (
+                  <p className="text-sm text-red-500">
+                    {errors.repoUrl.message}
+                  </p>
+                )}
+                <div className="h-1"></div>
+              </FormItem>
+            )}
+          />
+          <FormField
+            name="githubToken"
+            control={control}
+            render={({ field }) => (
+              <FormItem>
+                <Input
+                  {...register("githubToken")}
+                  placeholder="Github Token (Optional)"
+                  className={cn(
+                    errors.githubToken && "focus-visible:ring-red-500",
+                  )}
+                  {...field}
+                />
+                {errors.githubToken && (
+                  <p className="text-sm text-red-500">
+                    {errors.githubToken.message}
+                  </p>
+                )}
+              </FormItem>
+            )}
+          />
+          <div className="h-4"></div>
+          <Button type="submit">Create Project</Button>
+        </form>
       </div>
     </div>
   );
