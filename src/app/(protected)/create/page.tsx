@@ -4,9 +4,12 @@ import { Button } from "@/components/ui/button";
 import { FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
+import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Loader2 } from "lucide-react";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
+import { toast } from "sonner";
 import { z } from "zod";
 
 const formSchema = z.object({
@@ -23,6 +26,7 @@ const CreateProject = () => {
     handleSubmit,
     register,
     formState: { errors },
+    reset,
   } = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     mode: "onChange",
@@ -32,9 +36,26 @@ const CreateProject = () => {
       githubToken: "",
     },
   });
+  const createProject = api.project.createProject.useMutation();
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    window.alert(JSON.stringify(values, null, 2));
+    console.log(values);
+    createProject.mutate(
+      {
+        name: values.projectName,
+        githubUrl: values.repoUrl,
+        githubToken: values.githubToken,
+      },
+      {
+        onSuccess: () => {
+          toast.success("Project created successfully");
+          reset();
+        },
+        onError: () => {
+          toast.error("Failed to create project");
+        },
+      },
+    );
     return true;
   };
 
@@ -123,7 +144,16 @@ const CreateProject = () => {
             )}
           />
           <div className="h-4"></div>
-          <Button type="submit">Create Project</Button>
+          <Button type="submit" disabled={createProject.isPending} className="w-1/2">
+            {createProject.isPending ? (
+              <span>
+                <Loader2 className="animate-spin" />
+                Creating Project...
+              </span>
+            ) : (
+              "Create Project"
+            )}
+          </Button>
         </form>
       </div>
     </div>
