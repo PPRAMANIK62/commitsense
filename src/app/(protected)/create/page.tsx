@@ -3,6 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { FormField, FormItem } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import useRefetch from "@/hooks/use-refetch";
 import { cn } from "@/lib/utils";
 import { api } from "@/trpc/react";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -37,6 +38,7 @@ const CreateProject = () => {
     },
   });
   const createProject = api.project.createProject.useMutation();
+  const refetch = useRefetch();
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
     console.log(values);
@@ -49,6 +51,7 @@ const CreateProject = () => {
       {
         onSuccess: () => {
           toast.success("Project created successfully");
+          refetch();
           reset();
         },
         onError: () => {
@@ -144,10 +147,14 @@ const CreateProject = () => {
             )}
           />
           <div className="h-4"></div>
-          <Button type="submit" disabled={createProject.isPending} className="w-1/2">
+          <Button
+            type="submit"
+            disabled={createProject.isPending}
+            className="w-1/2"
+          >
             {createProject.isPending ? (
-              <span>
-                <Loader2 className="animate-spin" />
+              <span className="flex gap-2">
+                <Loader2 className="mt-[1.5px] animate-spin" />
                 Creating Project...
               </span>
             ) : (
