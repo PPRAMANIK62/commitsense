@@ -1,3 +1,4 @@
+import { db } from "@/server/db";
 import { Octokit } from "octokit";
 
 export const octokit = new Octokit({
@@ -14,9 +15,7 @@ type Response = {
   commitDate: string;
 };
 
-export const getCommitHashes = async (
-  githubUrl: string,
-): Promise<Response[]> => {
+export const getCommitData = async (githubUrl: string): Promise<Response[]> => {
   const { data } = await octokit.rest.repos.listCommits({
     owner: "PPRAMANIK62",
     repo: "my-portfolio-2",
@@ -41,4 +40,46 @@ export const getCommitHashes = async (
   return response;
 };
 
-console.log(await getCommitHashes(githubUrl));
+export const pollCommits = async (projectId: string) => {
+  const { githubUrl } = await fetchProjectGithubUrl(projectId);
+  const commitData = await getCommitData(githubUrl);
+  const unprocessedCommits = await filterUnprocessedCommits(
+    projectId,
+    commitData,
+  );
+
+  return unprocessedCommits;
+};
+
+const fetchProjectGithubUrl = async (projectId: string) => {
+  const project = await db.project.findUnique({
+    where: { id: projectId },
+    select: { githubUrl: true },
+  });
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  return { project, githubUrl: project?.githubUrl };
+};
+
+const filterUnprocessedCommits = async (
+  projectId: string,
+  commitData: Response[],
+) => {
+  const processedCommits = await db.commit.findMany({
+    where: { projectId },
+    select: { commitHash: true },
+  });
+
+  const unprocessedCommits = commitData.filter(
+    (commit) =>
+      !processedCommits.some(
+        (processedCommit) => processedCommit.commitHash === commit.commitHash,
+      ),
+  );
+
+  return unprocessedCommits;
+};
+
+await pollCommits("184216e3-7321-4934-907d-9daf91d03073");
