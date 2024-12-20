@@ -7,8 +7,6 @@ export const octokit = new Octokit({
   auth: process.env.GITHUB_TOKEN,
 });
 
-const githubUrl = "https://github.com/PPRAMANIK62/my-portfolio-2";
-
 type Response = {
   commitHash: string;
   commitMessage: string;
@@ -68,15 +66,17 @@ export const pollCommits = async (projectId: string) => {
   });
 
   const commits = await db.commit.createMany({
-    data: summaries.map((summary, index) => ({
-      projectId,
-      commitHash: unprocessedCommits[index]!.commitHash,
-      commitMessage: unprocessedCommits[index]!.commitMessage,
-      commitAuthor: unprocessedCommits[index]!.commitAuthor,
-      commitAuthorAvatar: unprocessedCommits[index]!.commitAuthorAvatar,
-      commitDate: unprocessedCommits[index]!.commitDate,
-      summary,
-    })),
+    data: summaries.map((summary, index) => {
+      return {
+        projectId,
+        commitHash: unprocessedCommits[index]!.commitHash,
+        commitMessage: unprocessedCommits[index]!.commitMessage,
+        commitAuthor: unprocessedCommits[index]!.commitAuthor,
+        commitAuthorAvatar: unprocessedCommits[index]!.commitAuthorAvatar,
+        commitDate: unprocessedCommits[index]!.commitDate,
+        summary,
+      };
+    }),
   });
 
   return commits;
