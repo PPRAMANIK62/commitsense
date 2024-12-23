@@ -122,5 +122,3 @@ const filterUnprocessedCommits = async (
 
   return unprocessedCommits;
 };
-
-await pollCommits("184216e3-7321-4934-907d-9daf91d03073");
