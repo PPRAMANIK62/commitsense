@@ -35,6 +35,22 @@ export const loadGithubRepo = async (
 //   id: undefined,
 // },
 
+const generateEmbeddings = async (docs: Document[]) => {
+  const embeddings = await Promise.all(
+    docs.map(async (doc) => {
+      const summary = await summarizeCode(doc);
+      const embedding = await generateEmbedding(summary);
+      return {
+        summary,
+        embedding,
+        filename: doc.metadata.source,
+        sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
+      };
+    }),
+  );
+  return embeddings;
+};
+
 export const indexGithubRepo = async (
   projectId: string,
   githubUrl: string,
@@ -65,18 +81,3 @@ export const indexGithubRepo = async (
   );
 };
 
-const generateEmbeddings = async (docs: Document[]) => {
-  const embeddings = await Promise.all(
-    docs.map(async (doc) => {
-      const summary = await summarizeCode(doc);
-      const embedding = await generateEmbedding(summary);
-      return {
-        summary,
-        embedding,
-        filename: doc.metadata.source,
-        sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
-      };
-    }),
-  );
-  return embeddings;
-};
