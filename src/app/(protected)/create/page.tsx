@@ -41,7 +41,6 @@ const CreateProject = () => {
   const refetch = useRefetch();
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log(values);
     createProject.mutate(
       {
         name: values.projectName,

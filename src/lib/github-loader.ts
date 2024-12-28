@@ -1,4 +1,7 @@
+import { db } from "@/server/db";
 import { GithubRepoLoader } from "@langchain/community/document_loaders/web/github";
+import { type Document } from "@langchain/core/documents";
+import { generateEmbedding, summarizeCode } from "./gemini";
 
 export const loadGithubRepo = async (
   githubUrl: string,
@@ -21,8 +24,6 @@ export const loadGithubRepo = async (
   return docs;
 };
 
-console.log(await loadGithubRepo("https://github.com/PPRAMANIK62/casecobra"));
-
 // Output:
 // Document {
 //   pageContent: "import { OurFileRouter } from \"@/app/api/uploadthing/core\";\nimport { generateReactHelpers } from \"@uploadthing/react\";\n\nexport const { useUploadThing, uploadFiles } =\n  generateReactHelpers<OurFileRouter>();\n",
@@ -33,3 +34,49 @@ console.log(await loadGithubRepo("https://github.com/PPRAMANIK62/casecobra"));
 //   },
 //   id: undefined,
 // },
+
+export const indexGithubRepo = async (
+  projectId: string,
+  githubUrl: string,
+  githubToken?: string,
+) => {
+  const docs = await loadGithubRepo(githubUrl, githubToken);
+  const allEmbeddings = await generateEmbeddings(docs);
+
+  await Promise.allSettled(
+    allEmbeddings.map(async (embedding) => {
+      if (!embedding) return;
+
+      const sourceCodeEmbedding = await db.sourceCodeEmbedding.create({
+        data: {
+          projectId,
+          fileName: embedding.filename,
+          sourceCode: embedding.sourceCode,
+          summary: embedding.summary,
+        },
+      });
+
+      await db.$executeRaw`
+      UPDATE "SourceCodeEmbedding"
+      SET "summaryEmbedding" = ${embedding.embedding}::vector
+      WHERE "id" = ${sourceCodeEmbedding.id}
+      `;
+    }),
+  );
+};
+
+const generateEmbeddings = async (docs: Document[]) => {
+  const embeddings = await Promise.all(
+    docs.map(async (doc) => {
+      const summary = await summarizeCode(doc);
+      const embedding = await generateEmbedding(summary);
+      return {
+        summary,
+        embedding,
+        filename: doc.metadata.source,
+        sourceCode: JSON.parse(JSON.stringify(doc.pageContent)),
+      };
+    }),
+  );
+  return embeddings;
+};
