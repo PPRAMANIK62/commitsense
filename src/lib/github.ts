@@ -113,11 +113,12 @@ const filterUnprocessedCommits = async (
     select: { commitHash: true },
   });
 
+  const processedCommitHashes = new Set(
+    processedCommits.map((commit) => commit.commitHash),
+  );
+
   const unprocessedCommits = commitData.filter(
-    (commit) =>
-      !processedCommits.some(
-        (processedCommit) => processedCommit.commitHash === commit.commitHash,
-      ),
+    (commit) => !processedCommitHashes.has(commit.commitHash),
   );
 
   return unprocessedCommits;

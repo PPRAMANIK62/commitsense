@@ -25,7 +25,6 @@ export const askQuestion = async (question: string, projectId: string) => {
   ORDER BY similarity DESC
   LIMIT 10
   `) as { fileName: string; sourceCode: string; summary: string }[];
-  console.log(result);
 
   let context = "";
   for (const { fileName, sourceCode, summary } of result) {

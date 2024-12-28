@@ -10,10 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import useProject from "@/hooks/use-project";
+import MDEditor from "@uiw/react-md-editor";
 import { readStreamableValue } from "ai/rsc";
 import { Loader2 } from "lucide-react";
 import { useState } from "react";
 import { askQuestion } from "./actions";
+import CodeReferences from "./code-references";
 
 const AskQuestionCard = () => {
   const { project } = useProject();
@@ -30,14 +32,17 @@ const AskQuestionCard = () => {
     e.preventDefault();
 
     try {
+      setAnswer("");
+      setFileReferences([]);
+
       if (!project?.id) return;
       setIsLoading(true);
-      setOpen(true);
 
       const { output, fileReferences } = await askQuestion(
         question,
         project.id,
       );
+      setOpen(true);
       setFileReferences(fileReferences);
 
       for await (const delta of readStreamableValue(output)) {
@@ -53,22 +58,19 @@ const AskQuestionCard = () => {
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+        <DialogContent className="sm:max-w-[80vw]">
           <DialogHeader>
             <DialogTitle>
               {/* <Image src={"/logo.png"} alt="logo" width={40} height={40} /> */}
             </DialogTitle>
           </DialogHeader>
 
-          {answer}
-          <h1>File References</h1>
-          {fileReferences.map((fileReference) => (
-            <div key={fileReference.fileName}>
-              <h2>{fileReference.fileName}</h2>
-              <p>{fileReference.summary}</p>
-              <pre>{fileReference.sourceCode}</pre>
-            </div>
-          ))}
+          <MDEditor.Markdown
+            source={answer}
+            className="h-full max-h-[40vh] max-w-[70vw] overflow-scroll"
+          />
+          <div className="h-4"></div>
+          <CodeReferences fileReferences={fileReferences} />
         </DialogContent>
       </Dialog>
 
@@ -84,7 +86,7 @@ const AskQuestionCard = () => {
               onChange={(e) => setQuestion(e.target.value)}
             />
             <div className="h-4"></div>
-            <Button type="submit" className="w-1/3">
+            <Button type="submit" className="w-1/3" disabled={isLoading}>
               {isLoading ? (
                 <span className="flex gap-2">
                   <Loader2 className="mt-[1.5px] animate-spin" />
